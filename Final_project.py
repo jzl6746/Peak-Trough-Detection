@@ -22,7 +22,9 @@ import requests
 #api key: BBCT3KLZKHATW4RP
 Dailyurl = 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&apikey=BBCT3KLZKHATW4RP'
 Weeklyurl = 'https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY&symbol=IBM&apikey=BBCT3KLZKHATW4RP'
-r = requests.get(Weeklyurl)
+Monthlyurl = 'https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY&symbol=IBM&apikey=BBCT3KLZKHATW4RP'
+fiveMinurl = 'https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=5min&apikey=BBCT3KLZKHATW4RP'
+r = requests.get(url)
 data = r.json()
 
 print(data)
