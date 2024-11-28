@@ -2,32 +2,35 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
-class chartwidget(QWidget):
+
+class ChartWidget(QWidget):
     def __init__(self):
         super().__init__()
 
-        # Create a figure and canvas for plotting
+        #Initialize the figure and canvas
         self.figure = Figure()
         self.canvas = FigureCanvas(self.figure)
 
-        # Set up layout for the widget
         layout = QVBoxLayout()
         layout.addWidget(self.canvas)
         self.setLayout(layout)
 
-    def plot(self, data, peaks, troughs):
-        """Plot the stock data with peaks and troughs."""
+    def plot_data(self, dates, prices, peaks, troughs):
         self.figure.clear()
+
+        #Create a new subplot
         ax = self.figure.add_subplot(111)
 
-        ax.plot(data['Date'], data['Close'], label="Stock Price")
-        ax.scatter(data['Date'][peaks], data['Close'][peaks], color='green', label='Peaks')
-        ax.scatter(data['Date'][troughs], data['Close'][troughs], color='red', label='Troughs')
+        #Plot the stock data
+        ax.plot(dates, prices, label="Stock Price", color='blue')
 
-        ax.set_title("Stock Prices with Peaks and Troughs")
-        ax.set_xlabel("Date")
-        ax.set_ylabel("Price")
+        # Highlight the peaks and troughs
+        ax.scatter([dates[i] for i in peaks], [prices[i] for i in peaks], color='green', label='Peaks', zorder=5)
+        ax.scatter([dates[i] for i in troughs], [prices[i] for i in troughs], color='red', label='Troughs', zorder=5)
+
+        ax.set_title("Stock Prices with Peaks and Troughs", fontsize=16)
+        ax.set_xlabel("Date", fontsize=12)
+        ax.set_ylabel("Price", fontsize=12)
         ax.legend()
 
         self.canvas.draw()
-

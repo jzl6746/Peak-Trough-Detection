@@ -1,2 +1,2 @@
 from .stock_data import fetch_stock_data
-from .peak_trough_dectector import detect_peaks_troughs
+from .peak_trough_dectector import PeakTroughDetector

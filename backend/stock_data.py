@@ -1,7 +1,12 @@
 import requests
 import pandas as pd
 
-API_KEY = "BBCT3KLZKHATW4RP"
+API_KEY = "535ANFU20KLL61KS"
+
+""" 
+Joe's Key:  BBCT3KLZKHATW4RP
+Nate's Key: 535ANFU20KLL61KS
+"""
 BASE_URL = "https://www.alphavantage.co/query"
 
 def fetch_stock_data(symbol, interval="TIME_SERIES_DAILY"):
@@ -20,10 +25,14 @@ def fetch_stock_data(symbol, interval="TIME_SERIES_DAILY"):
         response = requests.get(BASE_URL, params=params)
         data = response.json()
 
-        if "Error Message" in data:
-            raise ValueError(data["Error Message"])
+        print(f"Raw response from API for {symbol}: {data}")
 
-        # Extract relevant time series data
+        if "Error Message" in data:
+            raise ValueError(f"API Error: {data['Error Message']}")
+
+        if "Note" in data:
+            raise ValueError("API request limit reached. Please try again later.")
+
         if "Time Series (Daily)" in data:
             time_series = data["Time Series (Daily)"]
         elif "Weekly Time Series" in data:
@@ -33,12 +42,11 @@ def fetch_stock_data(symbol, interval="TIME_SERIES_DAILY"):
         else:
             raise ValueError("Invalid or unsupported interval provided.")
 
-        # Convert time series data to a pandas DataFrame
+        #Convert time series data to a pandas DataFrame
         df = pd.DataFrame.from_dict(time_series, orient="index", dtype=float)
         df.index = pd.to_datetime(df.index)
         df.sort_index(inplace=True)
 
-        # Rename columns for clarity
         df.rename(columns={
             "1. open": "Open",
             "2. high": "High",

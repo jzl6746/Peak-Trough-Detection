@@ -1,9 +1,14 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QPushButton, QLabel, QLineEdit, QDateEdit, QSlider, QHBoxLayout, QStatusBar, QMessageBox
-import requests
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QPushButton, QLabel,
+    QDateEdit, QSlider, QGridLayout, QStatusBar, QMessageBox
+)
 from PyQt5.QtCore import Qt
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.figure import Figure
+from pathlib import Path
+project_root = Path(__file__).resolve().parent.parent
+sys.path.append(str(project_root))
+from backend.peak_trough_dectector import PeakTroughDetector
+from chartwidget import ChartWidget  # Import the ChartWidget class
 
 class StockAnalyzerUI(QMainWindow):
     def __init__(self):
@@ -11,94 +16,94 @@ class StockAnalyzerUI(QMainWindow):
         self.setWindowTitle("Stock Peaks and Troughs Analyzer")
         self.setGeometry(100, 100, 1000, 600)
 
-        # Central widget
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
-        # Main layout
         main_layout = QVBoxLayout()
         central_widget.setLayout(main_layout)
 
-        # Header
         header_label = QLabel("Stock Peaks and Troughs Analyzer")
-        header_label.setStyleSheet("font-size: 24px; font-weight: bold;")
+        header_label.setAlignment(Qt.AlignCenter)
+        header_label.setStyleSheet("font-size: 28px; font-weight: bold; color: #4CAF50; padding: 10px;")
         main_layout.addWidget(header_label)
 
-        # Inputs for stock analysis
-        self.ticker_input = QLineEdit()
-        self.ticker_input.setPlaceholderText("Enter Stock Ticker (e.g., AAPL)")
-        main_layout.addWidget(self.ticker_input)
+        input_layout = QGridLayout()
+        main_layout.addLayout(input_layout)
+
+        stock_label = QLabel("Select Stock:")
+        input_layout.addWidget(stock_label, 0, 0)
+
+        self.stock_dropdown = QComboBox()
+        self.stock_dropdown.addItems(["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META"])
+        input_layout.addWidget(self.stock_dropdown, 0, 1)
+
+        start_date_label = QLabel("Start Date:")
+        input_layout.addWidget(start_date_label, 1, 0)
 
         self.start_date_input = QDateEdit()
         self.start_date_input.setCalendarPopup(True)
         self.start_date_input.setDisplayFormat("yyyy-MM-dd")
-        main_layout.addWidget(QLabel("Start Date:"))
-        main_layout.addWidget(self.start_date_input)
+        input_layout.addWidget(self.start_date_input, 1, 1)
+
+        end_date_label = QLabel("End Date:")
+        input_layout.addWidget(end_date_label, 2, 0)
 
         self.end_date_input = QDateEdit()
         self.end_date_input.setCalendarPopup(True)
         self.end_date_input.setDisplayFormat("yyyy-MM-dd")
-        main_layout.addWidget(QLabel("End Date:"))
-        main_layout.addWidget(self.end_date_input)
+        input_layout.addWidget(self.end_date_input, 2, 1)
+
+        sensitivity_label = QLabel("Sensitivity:")
+        input_layout.addWidget(sensitivity_label, 3, 0)
 
         self.sensitivity_slider = QSlider(Qt.Horizontal)
         self.sensitivity_slider.setRange(1, 10)
         self.sensitivity_slider.setValue(5)
-        main_layout.addWidget(QLabel("Sensitivity:"))
-        main_layout.addWidget(self.sensitivity_slider)
+        input_layout.addWidget(self.sensitivity_slider, 3, 1)
 
-        # Analyze button
         self.analyze_button = QPushButton("Analyze Stock")
+        self.analyze_button.setStyleSheet("""
+            background-color: #4CAF50;
+            color: white;
+            font-size: 16px;
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+        """)
         self.analyze_button.clicked.connect(self.analyze_stock)
         main_layout.addWidget(self.analyze_button)
 
-        # Display results
         self.results_label = QLabel("Analysis Results will appear here.")
+        self.results_label.setWordWrap(True)
+        self.results_label.setStyleSheet("""
+            padding: 15px;
+            border: 1px solid #ccc;
+            background: #f4f4f4;
+            font-size: 14px;
+        """)
         main_layout.addWidget(self.results_label)
 
-        # Add a figure canvas for the plot
-        self.figure = Figure()
-        self.canvas = FigureCanvas(self.figure)
-        main_layout.addWidget(self.canvas)
+        #Add the ChartWidget to display the plot
+        self.chart_widget = ChartWidget()
+        main_layout.addWidget(self.chart_widget)
 
-        # Status bar for feedback
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
 
     def analyze_stock(self):
-        # Get user inputs
-        ticker = self.ticker_input.text()
+        #Get user inputs
+        ticker = self.stock_dropdown.currentText()
         start_date = self.start_date_input.date().toString("yyyy-MM-dd")
         end_date = self.end_date_input.date().toString("yyyy-MM-dd")
         sensitivity = self.sensitivity_slider.value()
 
-        # Input validation
-        if not ticker:
-            QMessageBox.warning(self, "Input Error", "Please enter a stock ticker symbol.")
-            return
-
-        # Show status message
-        self.status_bar.showMessage("Analyzing... Please wait.")
-
-        # Send request to Flask API
-        payload = {
-            'ticker': ticker,
-            'start_date': start_date,
-            'end_date': end_date,
-            'sensitivity': sensitivity
-        }
         try:
-            response = requests.post('http://127.0.0.1:5000/api/analyze', json=payload)
-
-            if response.status_code == 200:
-                data = response.json()
-                self.display_results(data)
-                self.plot_stock_data(data)
-                self.status_bar.showMessage("Analysis Complete!")
-            else:
-                QMessageBox.warning(self, "Error", "Failed to analyze stock data.")
-        except requests.exceptions.RequestException as e:
-            QMessageBox.critical(self, "Error", f"Error while contacting the server: {e}")
+            result = PeakTroughDetector.analyze_stock_from_ui(ticker, start_date, end_date, sensitivity)
+            self.display_results(result)
+            self.chart_widget.plot_data(result['dates'], result['prices'], result['peaks'], result['troughs'])  # Use the new chart widget
+            self.status_bar.showMessage("Analysis Complete!")
+        except ValueError as e:
+            QMessageBox.critical(self, "Analysis Error", str(e))
             self.status_bar.clearMessage()
 
     def display_results(self, data):
@@ -106,49 +111,14 @@ class StockAnalyzerUI(QMainWindow):
         troughs = data['troughs']
         stock_data = data['stock_data']
 
-        # Format the results as a string
         results = f"Peaks: {peaks}\nTroughs: {troughs}\nStock Data:\n"
         for entry in stock_data:
             results += f"{entry['date']}: {entry['price']}\n"
 
-        # Display results in the UI
         self.results_label.setText(results)
-
-    def plot_stock_data(self, data):
-        # Clear the figure
-        self.figure.clear()
-
-        # Extract stock data
-        dates = [entry['date'] for entry in data['stock_data']]
-        prices = [entry['price'] for entry in data['stock_data']]
-        peaks = data['peaks']
-        troughs = data['troughs']
-
-        # Ensure peaks and troughs are within bounds
-        peaks = [i for i in peaks if i < len(dates)]
-        troughs = [i for i in troughs if i < len(dates)]
-
-        # Create a new subplot
-        ax = self.figure.add_subplot(111)
-
-        # Plot the stock data
-        ax.plot(dates, prices, label="Stock Price", color='blue')
-
-        # Highlight the peaks and troughs
-        ax.scatter([dates[i] for i in peaks], [prices[i] for i in peaks], color='green', label='Peaks', zorder=5)
-        ax.scatter([dates[i] for i in troughs], [prices[i] for i in troughs], color='red', label='Troughs', zorder=5)
-
-        ax.set_title("Stock Prices with Peaks and Troughs")
-        ax.set_xlabel("Date")
-        ax.set_ylabel("Price")
-        ax.legend()
-
-        # Redraw the canvas
-        self.canvas.draw()
 
 
 if __name__ == "__main__":
-    # Run PyQt5 UI
     app = QApplication(sys.argv)
     window = StockAnalyzerUI()
     window.show()

@@ -1,19 +1,44 @@
-from scipy.signal import find_peaks
+from backend.stock_data import fetch_stock_data
 
-def detect_peaks_troughs(data, sensitivity = 5):
-    """
-    Detect peaks and troughs in stock data.
-    :param data: List or Pandas Series of stock prices.
-    :param sensitivity: Integer value controlling sensitivity (higher is less sensitive).
-    :return: Indices of peaks and troughs.
-    """
-    try:
-        # Peaks: Local maxima
-        peaks, _ = find_peaks(data, height=sensitivity)
-
-        # Troughs: Invert data to find local minima
-        troughs, _ = find_peaks(-data, height=sensitivity)
-
+class PeakTroughDetector:
+    @staticmethod
+    def find_peaks_and_troughs(prices, sensitivity=5):
+        """
+        Helper function to calculate peaks and troughs.
+        """
+        peaks = []
+        troughs = []
+        for i in range(1, len(prices) - 1):
+            if prices[i] > prices[i - 1] and prices[i] > prices[i + 1]:
+                peaks.append(i)
+            elif prices[i] < prices[i - 1] and prices[i] < prices[i + 1]:
+                troughs.append(i)
         return peaks, troughs
-    except Exception as e:
-        raise RuntimeError(f"Error detecting peaks and troughs: {e}")
+
+    @staticmethod
+    def analyze_stock_from_ui(ticker, start_date, end_date, sensitivity=5):
+        """
+        Analyze stock data
+        """
+        df = fetch_stock_data(ticker)
+
+        if df is None:
+            raise ValueError(f"Failed to fetch data for ticker: {ticker}. Please check the symbol or try again later.")
+
+        df = df[(df.index >= start_date) & (df.index <= end_date)]
+
+        if df.empty:
+            raise ValueError("No data available for the given date range.")
+
+        close_prices = df['Close'].values.tolist()
+
+        #Find peaks and troughs
+        peaks, troughs = PeakTroughDetector.find_peaks_and_troughs(close_prices, sensitivity)
+
+        response_data = {
+            'peaks': peaks,
+            'troughs': troughs,
+            'stock_data': [{"date": str(date.date()), "price": price} for date, price in zip(df.index, close_prices)]
+        }
+
+        return response_data
