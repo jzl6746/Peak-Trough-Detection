@@ -1,18 +1,45 @@
-from backend.stock_data import fetch_stock_data
+from .stock_data import fetch_stock_data
+from .cnn_model import CNNModel
+import numpy as np
 
 class PeakTroughDetector:
     @staticmethod
-    def find_peaks_and_troughs(prices, sensitivity=5):
+    def preprocess_data(prices, window_size):
         """
-        Helper function to calculate peaks and troughs.
+        Preprocess stock prices into sliding windows for prediction.
         """
-        peaks = []
-        troughs = []
-        for i in range(1, len(prices) - 1):
-            if prices[i] > prices[i - 1] and prices[i] > prices[i + 1]:
-                peaks.append(i)
-            elif prices[i] < prices[i - 1] and prices[i] < prices[i + 1]:
-                troughs.append(i)
+        windows = []
+        for i in range(len(prices) - window_size):
+            window = prices[i:i + window_size]
+            # Normalize the window
+            window = (window - np.mean(window)) / np.std(window)
+            windows.append(window)
+        return np.array(windows).reshape(-1, window_size, 1)
+    
+    @staticmethod
+    def find_peaks_and_troughs(prices, model_path, window_size=50):
+        """
+        Detect peaks and troughs using the trained CNN model.
+        """
+        # Load the trained model
+        if not model_path:
+            raise ValueError("Model path is required.")
+        model = CNNModel.load_trained_model(model_path)
+
+        # Preprocess the data
+        preprocessed_data = PeakTroughDetector.preprocess_data(prices, window_size)
+        print("Preprocessed Data Shape:", preprocessed_data.shape)
+
+        # Predict using the CNN
+        predictions = model.predict(preprocessed_data)
+        print("Raw Predictions:", predictions[:5])  # Debug: first 5 raw predictions
+        predictions = np.argmax(predictions, axis=1)
+        print("Class Predictions:", predictions[:20])  # Debug: first 20 class predictions
+
+        # Map predictions to indices
+        peaks = [i for i, pred in enumerate(predictions) if pred == 1]  # Peak
+        troughs = [i for i, pred in enumerate(predictions) if pred == 2]  # Trough
+
         return peaks, troughs
 
     @staticmethod
@@ -33,7 +60,7 @@ class PeakTroughDetector:
         close_prices = df['Close'].values.tolist()
 
         #Find peaks and troughs
-        peaks, troughs = PeakTroughDetector.find_peaks_and_troughs(close_prices, sensitivity)
+        peaks, troughs = PeakTroughDetector.find_peaks_and_troughs(close_prices, 'cnn_model.h5')
 
         response_data = {
             'peaks': peaks,

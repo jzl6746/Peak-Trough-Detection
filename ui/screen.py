@@ -99,8 +99,13 @@ class StockAnalyzerUI(QMainWindow):
 
         try:
             result = PeakTroughDetector.analyze_stock_from_ui(ticker, start_date, end_date, sensitivity)
+            
+            # Extract dates and prices
+            dates = [entry['date'] for entry in result['stock_data']]
+            prices = [entry['price'] for entry in result['stock_data']]
+            
             self.display_results(result)
-            self.chart_widget.plot_data(result['dates'], result['prices'], result['peaks'], result['troughs'])  # Use the new chart widget
+            self.chart_widget.plot_data(dates, prices, result['peaks'], result['troughs'])  # Use the new chart widget
             self.status_bar.showMessage("Analysis Complete!")
         except ValueError as e:
             QMessageBox.critical(self, "Analysis Error", str(e))
