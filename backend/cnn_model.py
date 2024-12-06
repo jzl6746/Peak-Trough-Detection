@@ -27,6 +27,19 @@ class CNNModel:
             Dense(3, activation='softmax')  # 3 classes: [0, 1, 2]
         ])
         
+        
+        """
+        model = Sequential([
+            Conv1D(64, kernel_size=3, activation='relu', input_shape=input_shape),
+            MaxPooling1D(pool_size=2),
+            Dropout(0.3),
+            Flatten(),
+            Dense(128, activation='relu'),
+            Dropout(0.3),
+            Dense(3, activation='softmax')
+        ])
+        """  
+        
         model.compile(optimizer=Adam(learning_rate=0.0005), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
         return model
 
