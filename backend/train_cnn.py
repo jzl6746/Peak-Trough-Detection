@@ -30,8 +30,12 @@ def generate_training_data(data, window_size=50):
         # Weight aggregated prices and volume
         weighted_metric = 0.8 * aggregated_prices + 0.2 * normalized_volume
         
-        is_peak = np.argmax(weighted_metric) == window_size // 2
-        is_trough = np.argmin(weighted_metric) == window_size // 2
+        #peak range for boosted accuracy of peaks and 
+        peak_range = range(window_size // 2 - 2, window_size // 2 + 3)  # Adjust as needed
+        peak_threshold = np.percentile(weighted_metric, 95)
+        trough_threshold = np.percentile(weighted_metric, 5)
+        is_peak = np.max(weighted_metric) > peak_threshold and (np.argmax(weighted_metric) in peak_range)
+        is_trough = np.min(weighted_metric) < trough_threshold and (np.argmin(weighted_metric) in peak_range)
 
         
         if is_peak:
