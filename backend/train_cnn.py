@@ -70,6 +70,9 @@ if df is not None:
 else:
     print("Failed to fetch data.")
 
+#normalization
+df = (df - df.min()) / (df.max() - df.min())
+
 # Convert the start_date and end_date to datetime
 start_date = pd.to_datetime(start_date)
 end_date = pd.to_datetime(end_date)

@@ -2,7 +2,7 @@ import requests
 import pandas as pd
 from alpha_vantage.timeseries import TimeSeries
 
-API_KEY = "7IWMRGGSNYTQFAQB"
+API_KEY = "BBCT3KLZKHATW4RP"
 
 """ 
 Joe's Key:  BBCT3KLZKHATW4RP
