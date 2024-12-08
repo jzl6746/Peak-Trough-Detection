@@ -1,20 +1,22 @@
-from .stock_data import fetch_stock_data
+from .stock_data import fetch_stock_data_with_date_range
 from .cnn_model import CNNModel
 import numpy as np
 
 class PeakTroughDetector:
     @staticmethod
-    def preprocess_data(prices, window_size):
+    def preprocess_data(df, window_size):
         """
-        Preprocess stock prices into sliding windows for prediction.
+        Preprocess stock data into sliding windows for prediction.
         """
+        features = ['Open', 'High', 'Low', 'Close', 'Volume', 'SMA_10']  # Adjust as needed
         windows = []
-        for i in range(len(prices) - window_size):
-            window = prices[i:i + window_size]
-            # Normalize the window
-            window = (window - np.mean(window)) / np.std(window)
+        for i in range(len(df) - window_size):
+            window = df[features].iloc[i:i + window_size].values
+            # Normalize each feature in the window
+            window = (window - np.mean(window, axis=0)) / np.std(window, axis=0)
             windows.append(window)
-        return np.array(windows).reshape(-1, window_size, 1)
+        return np.array(windows).reshape(-1, window_size, len(features))
+
     
     @staticmethod
     def find_peaks_and_troughs(prices, model_path, window_size=50):
@@ -47,25 +49,24 @@ class PeakTroughDetector:
         """
         Analyze stock data
         """
-        df = fetch_stock_data(ticker)
+        df = fetch_stock_data_with_date_range(ticker, start_date, end_date)
 
         if df is None:
             raise ValueError(f"Failed to fetch data for ticker: {ticker}. Please check the symbol or try again later.")
 
-        df = df[(df.index >= start_date) & (df.index <= end_date)]
+        df['SMA_10'] = df['Close'].rolling(window=10).mean()
+        df['SMA_10'].fillna(method='bfill', inplace=True)  # Backfill with the next valid value
 
         if df.empty:
             raise ValueError("No data available for the given date range.")
 
-        close_prices = df['Close'].values.tolist()
-
         #Find peaks and troughs
-        peaks, troughs = PeakTroughDetector.find_peaks_and_troughs(close_prices, 'cnn_model.h5')
+        peaks, troughs = PeakTroughDetector.find_peaks_and_troughs(df, 'cnn_model.h5')
 
         response_data = {
             'peaks': peaks,
             'troughs': troughs,
-            'stock_data': [{"date": str(date.date()), "price": price} for date, price in zip(df.index, close_prices)]
+            'stock_data': [{"date": str(date.date()), "price": price} for date, price in zip(df.index, df['Close'].values.tolist())]
         }
 
         return response_data

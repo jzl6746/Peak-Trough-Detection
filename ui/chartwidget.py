@@ -2,8 +2,9 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from datetime import datetime
-import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from matplotlib.dates import DateFormatter
 
 
 class ChartWidget(QWidget):
@@ -56,9 +57,10 @@ class ChartWidget(QWidget):
         ax.set_ylabel("Price", fontsize=12)
         ax.legend()
 
-        # Format the x-axis to handle datetime objects properly
-        ax.xaxis.set_major_locator(mdates.WeekdayLocator())
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+        # Formatting the dates for better readability
+        ax.xaxis.set_major_formatter(DateFormatter('%Y-%m-%d'))
+        ax.xaxis.set_major_locator(mdates.WeekdayLocator(interval=1))  # Optional: Adjust intervals for clarity
+
         
         # Rotate the date labels for better readability
         plt.xticks(rotation=45)

@@ -107,6 +107,7 @@ class StockAnalyzerUI(QMainWindow):
             self.display_results(result)
             self.chart_widget.plot_data(dates, prices, result['peaks'], result['troughs'])  # Use the new chart widget
             self.status_bar.showMessage("Analysis Complete!")
+            self.chart_widget.update()
         except ValueError as e:
             QMessageBox.critical(self, "Analysis Error", str(e))
             self.status_bar.clearMessage()
